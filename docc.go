@@ -2,6 +2,7 @@ package docc
 
 import (
 	"archive/zip"
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -39,12 +40,12 @@ type Paragraph struct {
 type Reader struct {
 	docxPath string
 	fromDoc  bool
-	docx     *zip.ReadCloser
+	docx     io.Closer
 	xml      io.ReadCloser
 	dec      *xml.Decoder
 }
 
-// NewReader generetes a Reader struct.
+// NewReader generates a Reader struct.
 // After reading, the Reader struct shall be Close().
 func NewReader(docxPath string) (*Reader, error) {
 	r := new(Reader)
@@ -66,6 +67,32 @@ func NewReader(docxPath string) (*Reader, error) {
 		return nil, err
 	}
 	r.docx = a
+
+	f, err := a.Open("word/document.xml")
+	if err != nil {
+		return nil, err
+	}
+	r.xml = f
+	r.dec = xml.NewDecoder(f)
+
+	return r, nil
+}
+
+// NewFromReader generates a Reader struct from io.Reader.
+func NewFromReader(in io.Reader) (*Reader, error) {
+	b, err := io.ReadAll(in)
+	if err != nil {
+		return nil, err
+	}
+
+	br := bytes.NewReader(b)
+	a, err := zip.NewReader(br, br.Size())
+	if err != nil {
+		return nil, err
+	}
+
+	r := new(Reader)
+	r.docx = nil
 
 	f, err := a.Open("word/document.xml")
 	if err != nil {
@@ -106,12 +133,17 @@ func (r *Reader) ReadAll() ([]string, error) {
 }
 
 func (r *Reader) Close() error {
-	r.xml.Close()
-	r.docx.Close()
-	if r.fromDoc {
-		os.Remove(r.docxPath)
+	var merr error
+	if r.xml != nil {
+		merr = errors.Join(merr, r.xml.Close())
 	}
-	return nil
+	if r.docx != nil {
+		merr = errors.Join(merr, r.docx.Close())
+	}
+	if r.fromDoc {
+		merr = errors.Join(merr, os.Remove(r.docxPath))
+	}
+	return merr
 }
 
 func seekParagraph(dec *xml.Decoder) (string, error) {
