@@ -26,12 +26,12 @@ func TestReadAll(t *testing.T) {
 	fp := filepath.Clean("./testdata/test.docx")
 	r, err := NewReader(fp)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	defer FatalCloser(t, r)
 	got, err := r.ReadAll()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("want %v, got %v", want, got)
@@ -46,12 +46,12 @@ func TestReadAllFromReader(t *testing.T) {
 	}
 	r, err := NewFromReader(f)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	defer FatalCloser(t, r)
 	got, err := r.ReadAll()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("want %v, got %v", want, got)
@@ -62,12 +62,12 @@ func TestRead(t *testing.T) {
 	fp := filepath.Clean("./testdata/test.docx")
 	r, err := NewReader(fp)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	defer FatalCloser(t, r)
 	got, err := r.Read()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	if want[0] != got {
 		t.Errorf("want %s, got %s", want[0], got)
